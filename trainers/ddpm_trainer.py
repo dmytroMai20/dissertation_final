@@ -36,7 +36,7 @@ class DDPMTrainer():
                 self.history['gpu_mb_reserved'].append(gpu_mb_reserved)
             
             time_per_epoch = time.time()-start_time
-            self.history['times_per_epoch'] = time_per_epoch
+            self.history['times_per_epoch'].append(time_per_epoch)
 
             generated_images = self.gen_eval_imgs()
             save_generated_images(generated_images,f'ddpm_{self.config.dataset}_{str(self.config.res)}/epoch_{str(epoch)}')

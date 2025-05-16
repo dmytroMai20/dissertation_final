@@ -1,0 +1,1 @@
+**If you would like to train the model on CelebA, then you need to manually download celeba by running: curl -O https://s3-us-west-1.amazonaws.com/udacity-dlnfd/datasets/celeba.zip . (move to folder .data/celeba)

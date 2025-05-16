@@ -5,9 +5,9 @@ from torchvision.datasets import FashionMNIST
 from torchvision.datasets import STL10
 from torch.utils.data import DataLoader
 from torch.utils.data import Subset
+import random
 
-
-class DataLoader:
+class CustomDataLoader:
     def __init__(self, batch_size: int, resolution: int, dataset_name: str, num_workers:int =1, gray_fashion=False):
         self.batch_size = batch_size
         self.res = resolution
@@ -50,6 +50,8 @@ class DataLoader:
             transforms.Normalize([0.5]*3, [0.5]*3) 
         ])
         dataset = STL10(root="./data", split="unlabeled", download=True, transform=transform)
+        indices = random.sample(range(len(dataset)), 1000)
+        subset = Subset(dataset, indices)
         return DataLoader(dataset, batch_size=self.batch_size, drop_last=True, shuffle=True, num_workers=self.num_workers)
     
     def _load_celeba(self):

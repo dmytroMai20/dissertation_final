@@ -1,6 +1,6 @@
 import argparse
 from config_loader import load_config
-from datasets.dataset import DataLoader
+from datasets.dataset import CustomDataLoader
 from trainers import get_trainer
 
 def main():
@@ -18,7 +18,8 @@ def main():
     config = load_config(config_path)
 
     print(f"Preparing dataloader for dataset: {config.dataset}")
-    dataloader = DataLoader(config.batch_size, config.res, config.dataset.lower())
+    print(config.batch_size)
+    dataloader = CustomDataLoader(batch_size=config.batch_size, resolution=config.res, dataset_name=config.dataset.lower())
     data_loader = dataloader.get_loader()
 
     print(f"Starting training for model: {model_name}")

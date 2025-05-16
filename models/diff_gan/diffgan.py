@@ -30,8 +30,8 @@ class diffusiongan(torch.nn.Module):
         self.batch_size = config.batch_size
         self.channels = config.channels
         self.res = config.res
-        self.mixing_prob = config.mixing_prob
-        self.dim_w = config.dim_w
+        self.style_mixing_prob = config.mixing_prob
+        self.w_dims = config.dim_w
         self.grad_pen_interval = config.grad_pen_interval
         self.grad_pen_coef = config.grad_pen_coef
         self.path_pen_interval = config.path_pen_interval
@@ -65,7 +65,7 @@ class diffusiongan(torch.nn.Module):
         noise = self.get_noise()
         imgs = self.generator(w, noise)
         return imgs, w 
-    def train_step(self, real_images, d_optim, g_optim, mlp_optim, batch_idx, epoch):
+    def train_step(self, real_images, d_optim, g_optim, mlp_optim, batch_idx, epoch, num_batches):
         d_optim.zero_grad()
         self.train()
         real_images, t_real = self.diffusion(real_images)
@@ -106,7 +106,7 @@ class diffusiongan(torch.nn.Module):
 
         g_loss = self.gen_loss(fake_output)
 
-        if (batch_idx+1) % self.path_pen_interval == 0 and batch_idx+(epoch*self.num_batches) > self.path_pen_after:
+        if (batch_idx+1) % self.path_pen_interval == 0 and batch_idx+(epoch*num_batches) > self.path_pen_after:
             path_len_penalty = self.path_len_pen(w, fake_images)
             if not torch.isnan(path_len_penalty):
                 g_loss = g_loss + path_len_penalty
@@ -129,8 +129,8 @@ class diffusiongan(torch.nn.Module):
             z2 = torch.randn(self.batch_size, self.w_dims).to(self.device)
             z1 = torch.randn(self.batch_size, self.w_dims).to(self.device)
 
-            w1 = self.mapping_network(z1)
-            w2 = self.mapping_network(z2)
+            w1 = self.mapping_net(z1)
+            w2 = self.mapping_net(z2)
 
             w1 = w1[None, :, :].expand(cross_over_point, -1, -1)
             w2 = w2[None, :, :].expand(self.num_blocks - cross_over_point, -1, -1)
@@ -140,7 +140,7 @@ class diffusiongan(torch.nn.Module):
 
             z = torch.randn(self.batch_size, self.w_dims).to(self.device)
 
-            w = self.mapping_network(z)
+            w = self.mapping_net(z)
 
             return w[None, :, :].expand(self.num_blocks, -1, -1)
 

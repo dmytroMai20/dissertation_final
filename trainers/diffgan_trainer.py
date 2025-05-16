@@ -26,6 +26,7 @@ class DiffusionGANTrainer():
         
     def train(self):
         evaluation_real_imgs = load_real_images(self.dataloader, self.config.device, 500)
+        num_batches = len(self.data_loader)
 
         for epoch in range(self.config.epochs):
             start_time = time.time()
@@ -34,7 +35,7 @@ class DiffusionGANTrainer():
                 
                 imgs = imgs.to(self.config.device)
                 
-                loss = self.model.train_step(imgs, self.d_optim, self.g_optim, self.mlp_optim, batch_idx, epoch)
+                loss = self.model.train_step(imgs, self.d_optim, self.g_optim, self.mlp_optim, batch_idx, epoch, num_batches)
 
                 gpu_mb_alloc = torch.cuda.memory_allocated() / (1024 ** 2)
                 gpu_mb_reserved = torch.cuda.memory_reserved() / (1024 ** 2)
@@ -56,7 +57,7 @@ class DiffusionGANTrainer():
             metrics = self.calc_metrics(evaluation_real_imgs,generated_images)
             
             print(f"Finished epoch {epoch}/30, FID: {metrics['fid_score']}")
-            self.history['times_per_epoch'] = time_per_epoch
+            self.history['times_per_epoch'].append(time_per_epoch)
         
         self.history['cum_times'] = np.cumsum(np.array(self.history['times_per_epoch']))
         time_per_kimg = ((sum(self.history['times_per_epoch'])/len(self.history['times_per_epoch']))/
@@ -72,7 +73,7 @@ class DiffusionGANTrainer():
         save_path = f"data/{name}.pt"
         torch.save({'generator':self.model.generator.state_dict(),
                     'mapping_net':self.model.mapping_net.state_dict(),
-                    'ema':self.ema.state_dict()}, save_path)
+                    'ema':self.ema.ema_model.state_dict()}, save_path)
         
     @torch.no_grad()    
     def calc_metrics(self, real, fake):
