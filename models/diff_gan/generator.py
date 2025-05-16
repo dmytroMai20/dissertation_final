@@ -34,6 +34,7 @@ class Generator(nn.Module):
             x, rgb_new = self.blocks[i-1](x, w[i], input_noise[i])
             rgb = self.up_sample(rgb) + rgb_new
         return rgb
+    
 class GeneratorBlock(nn.Module):
     def __init__(self, d_latent: int, in_features: int, out_features: int):
         super().__init__()
