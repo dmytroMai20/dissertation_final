@@ -1,6 +1,6 @@
 import argparse
 #from config_loader import load_config
-from datasets.dataset import CustomDataLoader
+from dataset import CustomDataLoader
 #from trainers import get_trainer
 from torch_fidelity import calculate_metrics
 

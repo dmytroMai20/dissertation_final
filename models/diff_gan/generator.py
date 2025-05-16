@@ -63,7 +63,6 @@ class GeneratorBlock(nn.Module):
 class ToRGB(nn.Module):
     def __init__(self, d_latent: int, features: int):
         super().__init__()
-        # Get style vector from $w$ (denoted by $A$ in the diagram) with
         # an [equalized learning-rate linear layer](#equalized_linear)
         self.to_style = EqualizedLinear(d_latent, features, bias=1.0)
 

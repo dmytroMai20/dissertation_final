@@ -39,10 +39,7 @@ def get_beta_schedule(beta_schedule, beta_start, beta_end, num_diffusion_timeste
         betas = np.linspace(-6, 6, num_diffusion_timesteps)
         betas = sigmoid(betas) * (beta_end - beta_start) + beta_start
     elif beta_schedule == 'cosine':
-        """
-        #cosine schedule
-        #as proposed in https://openreview.net/forum?id=-NEXDKk8gZ
-"""
+
         s = 0.008
         steps = num_diffusion_timesteps + 1
         x = np.linspace(0, steps, steps)

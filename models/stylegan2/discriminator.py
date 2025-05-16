@@ -43,7 +43,7 @@ class Discriminator(nn.Module):
 
         # Calculate and append [mini-batch standard deviation](#mini_batch_std_dev)
         x = self.std_dev(x)
-        # $3 \times 3$ convolution
+
         x = self.conv(x)
         # Flatten
         x = x.reshape(x.shape[0], -1)
@@ -108,10 +108,7 @@ class MiniBatchStdDev(nn.Module):
         grouped = x.view(self.group_size, -1)
         # Calculate the standard deviation for each feature among `group_size` samples
         #
-        # \begin{align}
-        # \mu_{i} &= \frac{1}{N} \sum_g x_{g,i} \\
-        # \sigma_{i} &= \sqrt{\frac{1}{N} \sum_g (x_{g,i} - \mu_i)^2  + \epsilon}
-        # \end{align}
+
         std = torch.sqrt(grouped.var(dim=0) + 1e-8)
         # Get the mean standard deviation
         std = std.mean().view(1, 1, 1, 1)

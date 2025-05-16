@@ -14,7 +14,7 @@ class ddpm(torch.nn.Module):
         self.batch_size = config.batch_size
         self.channels = config.channels
         self.res = config.res
-        print(f"config.res : {config.res}")
+    
         self.model = Unet(dim=config.res, channels=config.channels, dim_mults=(1,2,4,)).to(self.device)
         self.betas = linear_beta_schedule(timesteps=config.timesteps)
         # define alphas 
@@ -22,10 +22,12 @@ class ddpm(torch.nn.Module):
         self.alphas_cumprod = torch.cumprod(self.alphas, axis=0)
         self.alphas_cumprod_prev = F.pad(self.alphas_cumprod[:-1], (1, 0), value=1.0)
         self.sqrt_recip_alphas = torch.sqrt(1.0 / self.alphas)
-        # calculations for diffusion q(x_t | x_{t-1}) and others
+
+        
         self.sqrt_alphas_cumprod = torch.sqrt(self.alphas_cumprod)
         self.sqrt_one_minus_alphas_cumprod = torch.sqrt(1. - self.alphas_cumprod)
-        # calculations for posterior q(x_{t-1} | x_t, x_0)
+
+       
         self.posterior_variance = self.betas * (1. - self.alphas_cumprod_prev) / (1. - self.alphas_cumprod)
         #print("betas initialized")
     def forward(self, x_0,t, noise=None):
@@ -85,7 +87,9 @@ class ddpm(torch.nn.Module):
         return img.detach() 
     @torch.no_grad()
     def p_sample(self, x, t, t_index):
+
         betas_t = self.extract(self.betas, t, x.shape)
+
         sqrt_one_minus_alphas_cumprod_t = self.extract(
             self.sqrt_one_minus_alphas_cumprod, t, x.shape
         )
@@ -99,6 +103,7 @@ class ddpm(torch.nn.Module):
             return model_mean
         else:
             posterior_variance_t = self.extract(self.posterior_variance, t, x.shape)
+            
             noise = torch.randn_like(x)
 
             return model_mean + torch.sqrt(posterior_variance_t) * noise 

@@ -88,7 +88,6 @@ class DiscriminatorBlock(nn.Module):
         # Down-sampling layer
         self.down_sample = DownSample()
 
-        # Scaling factor $\frac{1}{\sqrt 2}$ after adding the residual
         self.scale = 1 / math.sqrt(2)
 
     def forward(self, x):
@@ -127,11 +126,7 @@ class MiniBatchStdDev(nn.Module):
         # since we want to calculate the standard deviation for each feature.
         grouped = x.view(self.group_size, -1)
         # Calculate the standard deviation for each feature among `group_size` samples
-        #
-        # \begin{align}
-        # \mu_{i} &= \frac{1}{N} \sum_g x_{g,i} \\
-        # \sigma_{i} &= \sqrt{\frac{1}{N} \sum_g (x_{g,i} - \mu_i)^2  + \epsilon}
-        # \end{align}
+  
         std = torch.sqrt(grouped.var(dim=0) + 1e-8)
         # Get the mean standard deviation
         std = std.mean().view(1, 1, 1, 1)

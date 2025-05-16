@@ -32,6 +32,7 @@ class diffusiongan(torch.nn.Module):
         self.res = config.res
         self.style_mixing_prob = config.mixing_prob
         self.w_dims = config.dim_w
+
         self.grad_pen_interval = config.grad_pen_interval
         self.grad_pen_coef = config.grad_pen_coef
         self.path_pen_interval = config.path_pen_interval
@@ -53,6 +54,7 @@ class diffusiongan(torch.nn.Module):
         self.diffusion_p = 0 # initial value of diffusion (bounded [0,1] adjusting T_max)
         self.diffusion = Diffusion()
         self.diffusion.p = self.diffusion_p
+
         self.d_target = config.d_target
         self.update_kimg = config.update_kimg # KImgs to change p from 0,1
 
@@ -65,6 +67,7 @@ class diffusiongan(torch.nn.Module):
         noise = self.get_noise()
         imgs = self.generator(w, noise)
         return imgs, w 
+    
     def train_step(self, real_images, d_optim, g_optim, mlp_optim, batch_idx, epoch, num_batches):
         d_optim.zero_grad()
         self.train()
@@ -78,6 +81,7 @@ class diffusiongan(torch.nn.Module):
         # requires.grad if reaches gradient penalty interval (set to 4)
         if (batch_idx+1) % self.grad_pen_interval == 0:
             real_images.requires_grad_()
+
         real_output = self.discriminator(real_images, t_real)
 
         real_loss, fake_loss = self.disc_loss(real_output, fake_output)
@@ -110,7 +114,9 @@ class diffusiongan(torch.nn.Module):
             path_len_penalty = self.path_len_pen(w, fake_images)
             if not torch.isnan(path_len_penalty):
                 g_loss = g_loss + path_len_penalty
+
         g_loss.backward()
+
         nn.utils.clip_grad_norm_(self.generator.parameters(), max_norm=1.0)
         nn.utils.clip_grad_norm_(self.mapping_net.parameters(), max_norm=1.0)
 
@@ -147,14 +153,17 @@ class diffusiongan(torch.nn.Module):
     def get_noise(self):
             noise = []
             resolution = 4
+
             for i in range(self.num_blocks):
                 if i == 0:
                     n1 = None
                 else:
                     n1 = torch.randn(self.batch_size, 1, resolution, resolution, device=self.device)
+                    
                 n2 = torch.randn(self.batch_size, 1, resolution, resolution, device=self.device)
                 noise.append((n1, n2))
                 resolution *= 2
+
             return noise
 
     def gen_images(self):
