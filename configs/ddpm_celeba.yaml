@@ -1,0 +1,11 @@
+model: ddpm
+dataset: CelebA
+res: 64
+batch_size: 2
+channels: 3
+dim_mults: [1,2,4]
+epochs: 30
+lr: 1e-3
+timesteps: 300
+device: cpu
+save_dir: ./results/ddpm/
