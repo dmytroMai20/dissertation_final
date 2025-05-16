@@ -6,7 +6,7 @@ from trainers import get_trainer
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', type=str, required=False, choices=['ddpm', 'stylegan2', 'diffusiongan'], default="stylegan2")
-    parser.add_argument('--dataset', type=str, required=False, choices=['celeba', 'fashionmnist', 'stl10'], default="celeba")
+    parser.add_argument('--dataset', type=str, required=False, choices=['celeba', 'fashionmnist', 'stl10'], default="stl10")
     parser.add_argument('--config', type=str, default=None)
     args = parser.parse_args()
 

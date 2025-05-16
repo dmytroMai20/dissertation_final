@@ -13,12 +13,12 @@ class DDPMTrainer():
 
         self.model = ddpm(config)
         self.optimizer = Adam(self.model.parameters(), lr=self.config.lr) # 1e-3
-        self.dataloader = dataloader
+        self.data_loader = dataloader
 
         self.history = defaultdict(list)
 
     def train(self):
-        evaluation_real_imgs = load_real_images(self.dataloader, self.config.device, 500)
+        evaluation_real_imgs = load_real_images(self.data_loader, self.config.device, 500)
 
         for epoch in range(self.config.epochs):
             start_time = time.time()

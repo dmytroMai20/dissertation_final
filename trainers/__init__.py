@@ -7,7 +7,7 @@ def get_trainer(name, config, dataloader):
         return DDPMTrainer(config, dataloader)
     elif name == "stylegan2":
         return StyleGAN2Trainer(config, dataloader)
-    elif name == "diffusion_gan":
+    elif name == "diffgan":
         return DiffusionGANTrainer(config, dataloader)
     else:
         raise ValueError(f"Model {name} not implemented")
