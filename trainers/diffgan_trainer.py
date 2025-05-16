@@ -1,5 +1,5 @@
 from collections import defaultdict
-from models.diff_gan.diffgan import stylegan2
+from models.diff_gan.diffgan import diffusiongan
 from torch.optim import Adam
 from models.diff_gan.ema import EMA
 import torch
@@ -12,7 +12,7 @@ class DiffusionGANTrainer():
     def __init__(self, config, dataloader):
         self.config = config
 
-        self.model = stylegan2(config)
+        self.model = diffusiongan(config)
 
         self.data_loader = dataloader
 

@@ -1,5 +1,5 @@
 model: ddpm
-dataset: CelebA
+dataset: STL10
 res: 64
 batch_size: 32
 channels: 3
