@@ -2,6 +2,8 @@ import torch
 import torchvision.transforms as T
 from torchmetrics.image.fid import FrechetInceptionDistance
 from torchmetrics.image.kid import KernelInceptionDistance
+import os
+from torchvision.utils import save_image
 
 transform = T.Compose([
     T.Resize((299, 299)),  # InceptionV3 expects 299x299
@@ -56,3 +58,18 @@ def compute_fid(real_imgs, fake_imgs, device, sample_size=500): # smaller sample
     fid_value = fid.compute().item()
     del fid
     return fid_value
+
+def save_generated_images(images, name, folder='data'):
+    if images.min() < 0:
+        images = (images + 1) / 2  # Assuming input is in [-1, 1]
+
+    # Create directory for this epoch
+    #epoch_dir = os.path.join(folder,f'ddpm_{dataset}_{str(res)}_{str(t_max)}', f'epoch_{str(epoch)}')
+    epoch_dir = os.path.join(folder,name)
+    os.makedirs(epoch_dir, exist_ok=True)
+
+    # Save each image
+    for i in range(images.size(0)):
+        save_path = os.path.join(epoch_dir, f'image_{i:04d}.png')
+        save_image(images[i], save_path)
+    print(f"Epoch images saved to {epoch_dir}")
