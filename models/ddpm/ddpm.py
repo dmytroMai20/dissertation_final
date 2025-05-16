@@ -30,9 +30,11 @@ class ddpm(torch.nn.Module):
        
         self.posterior_variance = self.betas * (1. - self.alphas_cumprod_prev) / (1. - self.alphas_cumprod)
         #print("betas initialized")
+
     def forward(self, x_0,t, noise=None):
         if noise is None:
             noise = torch.randn_like(x_0)
+
         x_noisy = self.q_sample(x_start=x_0, t=t, noise=noise)
         predicted_noise = self.model(x_noisy, t)
         loss = F.mse_loss(noise, predicted_noise)
@@ -69,6 +71,7 @@ class ddpm(torch.nn.Module):
         )
 
         return sqrt_alphas_cumprod_t * x_start + sqrt_one_minus_alphas_cumprod_t * noise
+    
     def p_sample_loop(self, z=None):
         #device = next(self.parameters()).device
 
@@ -85,6 +88,7 @@ class ddpm(torch.nn.Module):
             img = self.p_sample(img, torch.full((self.batch_size,), i, device=self.device, dtype=torch.long), i)
             #imgs.append(img.cpu().numpy())
         return img.detach() 
+    
     @torch.no_grad()
     def p_sample(self, x, t, t_index):
 
@@ -103,7 +107,6 @@ class ddpm(torch.nn.Module):
             return model_mean
         else:
             posterior_variance_t = self.extract(self.posterior_variance, t, x.shape)
-            
             noise = torch.randn_like(x)
 
             return model_mean + torch.sqrt(posterior_variance_t) * noise 

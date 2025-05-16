@@ -7,6 +7,13 @@ from .util import SinusoidalPositionEmbeddings
 import numpy as np
 
 class Discriminator(nn.Module): 
+
+    """
+        Diffusion timestep conditioned discriminator
+        following principles in Diffusion-GAN paper with
+        ddded Sinusoidal positional embedding
+    """
+
     def __init__(self, log_resolution: int, n_features: int = 64, max_features: int = 512, embedding_dim=64):
         super().__init__()
 
@@ -103,6 +110,7 @@ class DiscriminatorBlock(nn.Module):
         return (x + residual) * self.scale
     
 class DownSample(nn.Module):
+    
     def __init__(self):
         super().__init__()
         # Smoothing layer

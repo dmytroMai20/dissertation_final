@@ -72,6 +72,46 @@ def compute_recall_precision(real_imgs, fake_imgs, device):
     )
     prc_dict['inception_score_mean'] = inception_dict['inception_score_mean']
     return prc_dict
+
+"""@torch.no_grad()
+def compute_fid(real_imgs, mapping_net, generator, device, res=64, mixing_prob=0.9, dim_w=512,batch_size=32, sample_size=5000): # use EMA for generator
+    #real_imgs.to(device)
+    fid = FrechetInceptionDistance(feature=2048, normalize=True).to(device)
+    num_blocks = int(math.log2(res))-1
+    fid.update(real_imgs[:sample_size], real=True)
+    num_batches = sample_size // batch_size # there is going to be slight imbalance (5000 real vs 5024 fake) but should not affect results and still yeild in accurate result
+    for _ in range(num_batches):
+        fake_images, _ = gen_images(batch_size, generator, num_blocks, mixing_prob, dim_w, mapping_net, device)
+        fake_images = transform(fake_images)
+        fid.update(fake_images, real=False)
+        del fake_images
+        torch.cuda.empty_cache
+    fid_value = fid.compute()
+    fid.reset()
+    del fid
+    torch.cuda.empty_cache()
+    return fid_value.item()
+
+@torch.no_grad()
+def compute_kid(real_imgs, mapping_net, generator, device, res=64, mixing_prob=0.9, dim_w=512, batch_size=32, sample_size=500): # smaller sample size for kid
+    real_imgs.to(device)
+    kid = KernelInceptionDistance(feature=2048,subset_size=50, normalize=True).to(device)
+    num_blocks = int(math.log2(res))-1
+    kid.update(real_imgs[:sample_size], real=True)
+    num_batches = sample_size // batch_size # there is going to be slight imbalance (5000 real vs 5024 fake) but should not affect results and still yeild in accurate result
+    for _ in range(num_batches):
+        fake_images, _ = gen_images(batch_size, generator, num_blocks, mixing_prob, dim_w, mapping_net, device)
+        fake_images = transform(fake_images)
+        kid.update(fake_images, real=False)
+        del fake_images
+        torch.cuda.empty_cache
+    kid_values = kid.compute()
+    kid.reset()
+    del kid
+    torch.cuda.empty_cache()
+    return [kid_values[0].item(), kid_values[1].item()]
+"""
+
 @torch.no_grad()
 def compute_metrics(dataset_name,fake_path, res):
     precisions = []
@@ -141,6 +181,30 @@ def plot_graphs(precisions, recalls, inceptions, model_name, dataset_name, res):
     plt.title("Inception Score")
     plt.savefig(f"inception_plot_{model_name}_{dataset_name}_{res}.png")
     plt.show()
+
+"""
+    plt.figure(figsize=(10, 5))
+    x = range(1,epochs+1)
+    plt.plot(x,fid_scores, label="FID scores")
+    plt.xlabel("Epoch")
+    plt.ylabel("EMA FID")
+    plt.legend()
+    plt.title("EMA FID curve")
+    plt.savefig(f"fid_plot_{dataset_name}_{img_res}.png")
+    plt.show()
+    
+    plt.figure(figsize=(10, 5))
+    x = range(1,epochs+1)
+    plt.errorbar(x,kid_means,yerr=kid_stds,capsize=5, label="KID scores")
+    plt.xlabel("Epoch")
+    plt.ylabel("EMA KID")
+    plt.legend()
+    plt.title("EMA KID curve")
+    plt.savefig(f"kid_plot_{dataset_name}_{img_res}.png")
+    plt.show()
+
+    """   
+
 if __name__=="__main__":
     prs, recalls, inceptions = compute_metrics("FashionMNIST","stylegan_FashionMNIST_64", 64)
     plot_graphs(prs, recalls, inceptions, "stylegan", "FashionMNIST", 64)
