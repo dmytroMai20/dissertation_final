@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
-
+from PIL import Image
+import os
 
 def plot_d_g_loss(d_losses, g_losses,name):
     plt.figure(figsize=(10, 5))
@@ -35,6 +36,31 @@ def plot_mem_usage(gpu_mb_alloc, gpu_mb_reserved, name):
     plt.title("Training Memory Usage")
     plt.savefig(f"memory_plot_{name}.png")
     plt.show()
+
+def create_image_grid(folder_path, output_path, grid_size=(8, 8), image_size=(64, 64)):
+    # List all PNG images in the folder
+    folder_path = os.path.join(os.getcwd(), folder_path)
+    image_files = [f for f in os.listdir(folder_path) if f.endswith('.png')]
+    image_files.sort()  # Sort to keep order consistent
+    image_files = image_files[:grid_size[0] * grid_size[1]]  # Take only first 64 images
+
+    # Create a blank canvas
+    grid_width = grid_size[0] * image_size[0]
+    grid_height = grid_size[1] * image_size[1]
+    grid_image = Image.new('RGB', (grid_width, grid_height))
+
+    for idx, file_name in enumerate(image_files):
+        img = Image.open(os.path.join(folder_path, file_name)).resize(image_size)
+        row = idx // grid_size[0]
+        col = idx % grid_size[0]
+        grid_image.paste(img, (col * image_size[0], row * image_size[1]))
+
+    grid_image.save(output_path)
+    print(f"Saved grid image to {output_path}")
+
+
+if __name__ == "__main__":
+    create_image_grid('epoch_29', 'output_grid_diff_gan_29.png')
 
 def plot_fid_kid(times_per_epoch, fid_scores, kid_means, kid_stds, name):
     # plot FID and KID against time 

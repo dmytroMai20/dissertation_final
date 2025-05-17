@@ -97,7 +97,7 @@ class Block(nn.Module):
         x = self.proj(x)
         x = self.norm(x)
 
-        if exists(scale_shift):
+        if scale_shift is not None:
             scale, shift = scale_shift
             x = x * (scale + 1) + shift
 
@@ -110,8 +110,6 @@ class ResnetBlock(nn.Module):
         super().__init__()
         self.mlp = (
             nn.Sequential(nn.SiLU(), nn.Linear(time_emb_dim, dim_out * 2))
-            if exists(time_emb_dim)
-            else None
         )
 
         self.block1 = Block(dim, dim_out, groups=groups)
@@ -120,10 +118,10 @@ class ResnetBlock(nn.Module):
 
     def forward(self, x, time_emb=None):
         scale_shift = None
-        if exists(self.mlp) and exists(time_emb):
-            time_emb = self.mlp(time_emb)
-            time_emb = rearrange(time_emb, "b c -> b c 1 1")
-            scale_shift = time_emb.chunk(2, dim=1)
+    
+        time_emb = self.mlp(time_emb)
+        time_emb = rearrange(time_emb, "b c -> b c 1 1")
+        scale_shift = time_emb.chunk(2, dim=1)
 
         h = self.block1(x, scale_shift=scale_shift)
         h = self.block2(h)

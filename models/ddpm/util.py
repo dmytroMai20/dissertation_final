@@ -4,6 +4,7 @@ from torchmetrics.image.fid import FrechetInceptionDistance
 from torchmetrics.image.kid import KernelInceptionDistance
 import math
 import os
+from torch import nn
 from torchvision.utils import save_image
 
 transform = T.Compose([
@@ -81,3 +82,17 @@ def save_generated_images(images, epoch,dataset,res,t_max, folder='data'):
         save_path = os.path.join(epoch_dir, f'image_{i:04d}.png')
         save_image(images[i], save_path)
     print(f"Epoch images saved to {epoch_dir}")
+
+class SinusoidalPositionEmbeddings(nn.Module):
+    def __init__(self, dim):
+        super().__init__()
+        self.dim = dim
+
+    def forward(self, time):
+        device = time.device
+        half_dim = self.dim // 2
+        embeddings = math.log(10000) / (half_dim - 1)
+        embeddings = torch.exp(torch.arange(half_dim, device=device) * -embeddings)
+        embeddings = time[:, None] * embeddings[None, :]
+        embeddings = torch.cat((embeddings.sin(), embeddings.cos()), dim=-1)
+        return embeddings
