@@ -16,7 +16,7 @@ class MappingMLP(nn.Module):
 
         self.net = nn.Sequential(*layers)
         
-    def forward(self, z, labels):
+    def forward(self, z, labels=None):
         z = F.normalize(z, dim=1)
         #class_embedding = self.label_embed(labels)  
         #z = z + class_embedding 

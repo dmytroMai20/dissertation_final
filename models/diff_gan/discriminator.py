@@ -52,7 +52,7 @@ class Discriminator(nn.Module):
             nn.Linear(final_features, final_features),
         )
 
-    def forward(self, x: torch.Tensor, t, labels):
+    def forward(self, x: torch.Tensor, t, labels=None):
         # Try to normalize the image (this is totally optional, but sped up the early training a little)
         #x = x - 0.5 # this could be detrimental
         # Convert from RGB
@@ -110,7 +110,7 @@ class DiscriminatorBlock(nn.Module):
         return (x + residual) * self.scale
     
 class DownSample(nn.Module):
-    
+
     def __init__(self):
         super().__init__()
         # Smoothing layer

@@ -106,7 +106,7 @@ class diffusiongan(torch.nn.Module):
 
         fake_images, w = self.gen_images()
         fake_images, t_fake = self.diffusion(fake_images)
-        fake_output = self.discriminator(fake_images)
+        fake_output = self.discriminator(fake_images, t_fake)
 
         g_loss = self.gen_loss(fake_output)
 
@@ -159,7 +159,7 @@ class diffusiongan(torch.nn.Module):
                     n1 = None
                 else:
                     n1 = torch.randn(self.batch_size, 1, resolution, resolution, device=self.device)
-                    
+
                 n2 = torch.randn(self.batch_size, 1, resolution, resolution, device=self.device)
                 noise.append((n1, n2))
                 resolution *= 2

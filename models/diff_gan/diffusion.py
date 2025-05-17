@@ -80,7 +80,7 @@ class Diffusion(torch.nn.Module):
 
         self.betas = linear_beta_schedule(t, self.beta_start, self.beta_end)
 
-        self.betas = torch.from_numpy(self.betas).float()
+        #self.betas = torch.from_numpy(self.betas).float()
 
         self.num_timesteps = self.betas.shape[0]
 
@@ -121,6 +121,7 @@ class Diffusion(torch.nn.Module):
             raise NotImplementedError(noise_type)
         
         alphas_t_sqrt = self.alphas_bar_sqrt[t].view(-1, 1, 1, 1)
+        print(f"one_minus_device = {self.one_minus_alphas_bar_sqrt.device}, t_device = {t.device}")
         one_minus_alphas_bar_t_sqrt = self.one_minus_alphas_bar_sqrt[t].view(-1, 1, 1, 1)
         x_t = alphas_t_sqrt * x_0 + one_minus_alphas_bar_t_sqrt * noise
 

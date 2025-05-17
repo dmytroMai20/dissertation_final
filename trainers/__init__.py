@@ -9,7 +9,7 @@ def get_trainer(name, config, dataloader):
     elif name == "stylegan2":
         return StyleGAN2Trainer(config, dataloader)
     
-    elif name == "diffgan":
+    elif name == "diffusiongan":
         return DiffusionGANTrainer(config, dataloader)
     
     else:

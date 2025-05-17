@@ -25,7 +25,7 @@ class DiffusionGANTrainer():
         self.history = defaultdict(list)
         
     def train(self):
-        evaluation_real_imgs = load_real_images(self.dataloader, self.config.device, 500)
+        evaluation_real_imgs = load_real_images(self.data_loader, self.config.device, 500)
         num_batches = len(self.data_loader)
 
         for epoch in range(self.config.epochs):
@@ -96,7 +96,7 @@ class DiffusionGANTrainer():
         generated_images = []
         num_batches = 500 // self.config.batch_size # there is going to be slight imbalance (5000 real vs 5024 fake) but should not affect results and still yeild in accurate result
         for _ in range(num_batches):
-            gen_images = self.model.gen_images()
+            gen_images, _ = self.model.gen_images()
             generated_images.append(gen_images)
         generated_images = torch.cat(generated_images, dim=0)
         return generated_images
