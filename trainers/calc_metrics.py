@@ -12,7 +12,6 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 """def load_images_from_folder(folder_path, device):
     images = []
     transform = T.Compose([
@@ -33,12 +32,14 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     else:
         return None
 """
+
+
 @torch.no_grad()
-def save_real_images(real_dataloader, to_save = 5000):
+def save_real_images(real_dataloader, to_save=5000):
     os.makedirs("real", exist_ok=True)
     imgs_saved = 0
-    for batch in tqdm(real_dataloader, desc= "Saving real images"):
-        if imgs_saved >= to_save: 
+    for batch in tqdm(real_dataloader, desc="Saving real images"):
+        if imgs_saved >= to_save:
             break
         imgs, _ = batch
         for img in imgs:
@@ -46,32 +47,30 @@ def save_real_images(real_dataloader, to_save = 5000):
                 break
             path = os.path.join("real", f"img_{imgs_saved}.png")
             save_image(img, path, normalize=True)
-            imgs_saved+=1
+            imgs_saved += 1
     print("Real images saved.")
-    
+
+
 @torch.no_grad()
 def compute_recall_precision(real_imgs, fake_imgs, device):
-    prc_dict = calculate_metrics(
-        input1=f'./{real_imgs}', 
-        input2=f'./{fake_imgs}', 
-        cuda=True, 
-        isc=False, 
-        fid=False, 
-        kid=False, 
-        prc=True, 
-        verbose=False
-    )
-    inception_dict = calculate_metrics(
-        input1=f'./{fake_imgs}', 
-        cuda=True, 
-        isc=True, 
-        fid=False, 
-        kid=False, 
-        prc=False, 
-        verbose=False
-    )
+    prc_dict = calculate_metrics(input1=f'./{real_imgs}',
+                                 input2=f'./{fake_imgs}',
+                                 cuda=True,
+                                 isc=False,
+                                 fid=False,
+                                 kid=False,
+                                 prc=True,
+                                 verbose=False)
+    inception_dict = calculate_metrics(input1=f'./{fake_imgs}',
+                                       cuda=True,
+                                       isc=True,
+                                       fid=False,
+                                       kid=False,
+                                       prc=False,
+                                       verbose=False)
     prc_dict['inception_score_mean'] = inception_dict['inception_score_mean']
     return prc_dict
+
 
 """@torch.no_grad()
 def compute_fid(real_imgs, mapping_net, generator, device, res=64, mixing_prob=0.9, dim_w=512,batch_size=32, sample_size=5000): # use EMA for generator
@@ -112,23 +111,26 @@ def compute_kid(real_imgs, mapping_net, generator, device, res=64, mixing_prob=0
     return [kid_values[0].item(), kid_values[1].item()]
 """
 
+
 @torch.no_grad()
-def compute_metrics(dataset_name,fake_path, res):
+def compute_metrics(dataset_name, fake_path, res):
     precisions = []
     recalls = []
     inceptions = []
-    dataset = CustomDataLoader(32,res,dataset_name)
+    dataset = CustomDataLoader(32, res, dataset_name)
     real_loader = dataset.get_loader()
     save_real_images(real_loader)
     real_imgs = "real"
-    for i in tqdm(range(0,30), desc="Calculating metrics per epoch"):
-        fake_imgs = os.path.join(fake_path,f"epoch_{i}")
+    for i in tqdm(range(0, 30), desc="Calculating metrics per epoch"):
+        fake_imgs = os.path.join(fake_path, f"epoch_{i}")
         metrics = compute_recall_precision(real_imgs, fake_imgs, device)
         print(metrics)
         precisions.append(metrics['precision'])
         recalls.append(metrics['recall'])
         inceptions.append(metrics['inception_score_mean'])
     return precisions, recalls, inceptions
+
+
 """
 def main():
     root_dir = './'  # Change this
@@ -152,11 +154,13 @@ def main():
     #        f.write(f"Folder {k}: {v:.4f}\n")
 """
 
-def plot_graphs(precisions, recalls, inceptions, model_name, dataset_name, res):
-    x_vals = range(1,31)
+
+def plot_graphs(precisions, recalls, inceptions, model_name, dataset_name,
+                res):
+    x_vals = range(1, 31)
     plt.figure(figsize=(10, 5))
-    plt.plot(x_vals,precisions, label="Precision")
-    plt.plot(x_vals,recalls, label="Recall")
+    plt.plot(x_vals, precisions, label="Precision")
+    plt.plot(x_vals, recalls, label="Recall")
     plt.xlabel("Epoch")
     plt.ylabel("Score")
     plt.legend()
@@ -165,22 +169,23 @@ def plot_graphs(precisions, recalls, inceptions, model_name, dataset_name, res):
     plt.show()
 
     plt.figure(figsize=(10, 5))
-    plt.plot(x_vals,precisions, label="Precision")
+    plt.plot(x_vals, precisions, label="Precision")
     plt.xlabel("Epoch")
     plt.ylabel("Score")
     plt.legend()
     plt.title("Precision")
     plt.savefig(f"precision_plot_{model_name}_{dataset_name}_{res}.png")
     plt.show()
-    
+
     plt.figure(figsize=(10, 5))
-    plt.plot(x_vals,inceptions, label="Inception Score")
+    plt.plot(x_vals, inceptions, label="Inception Score")
     plt.xlabel("Epoch")
     plt.ylabel("Inception Score")
     plt.legend()
     plt.title("Inception Score")
     plt.savefig(f"inception_plot_{model_name}_{dataset_name}_{res}.png")
     plt.show()
+
 
 """
     plt.figure(figsize=(10, 5))
@@ -203,8 +208,9 @@ def plot_graphs(precisions, recalls, inceptions, model_name, dataset_name, res):
     plt.savefig(f"kid_plot_{dataset_name}_{img_res}.png")
     plt.show()
 
-    """   
+    """
 
-if __name__=="__main__":
-    prs, recalls, inceptions = compute_metrics("FashionMNIST","stylegan_FashionMNIST_64", 64)
+if __name__ == "__main__":
+    prs, recalls, inceptions = compute_metrics("FashionMNIST",
+                                               "stylegan_FashionMNIST_64", 64)
     plot_graphs(prs, recalls, inceptions, "stylegan", "FashionMNIST", 64)

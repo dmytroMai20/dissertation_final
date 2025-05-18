@@ -1,7 +1,9 @@
 import torch
 from .generator import Generator
 
+
 class EMA:
+
     def __init__(self, model, decay=0.999):
         self.ema_model = self.clone_model(model)
         self.decay = decay
@@ -16,5 +18,7 @@ class EMA:
 
     def update(self, model):
         with torch.no_grad():
-            for ema_param, param in zip(self.ema_model.parameters(), model.parameters()):
-                ema_param.copy_(self.decay * ema_param + (1. - self.decay) * param)
+            for ema_param, param in zip(self.ema_model.parameters(),
+                                        model.parameters()):
+                ema_param.copy_(self.decay * ema_param +
+                                (1. - self.decay) * param)

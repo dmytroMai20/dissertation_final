@@ -3,13 +3,13 @@ from torch import nn
 import torch.nn.functional as F
 import math
 
+
 class Smooth(nn.Module):
+
     def __init__(self):
         super().__init__()
         # Blurring kernel
-        kernel = [[1, 2, 1],
-                  [2, 4, 2],
-                  [1, 2, 1]]
+        kernel = [[1, 2, 1], [2, 4, 2], [1, 2, 1]]
         # Convert the kernel to a PyTorch tensor
         kernel = torch.tensor([[kernel]], dtype=torch.float)
         # Normalize the kernel
@@ -34,38 +34,41 @@ class Smooth(nn.Module):
         # Reshape and return
         return x.view(b, c, h, w)
 
+
 class EqualizedLinear(nn.Module):
+
     def __init__(self, in_features, out_features, bias=0.):
         super().__init__()
         self.weight = nn.Parameter(torch.randn(out_features, in_features))
         self.scale = (1 / math.sqrt(in_features))
-        self.bias = nn.Parameter(torch.ones(out_features)*bias)
-    
+        self.bias = nn.Parameter(torch.ones(out_features) * bias)
+
     def forward(self, x):
         return F.linear(x, self.weight * self.scale, bias=self.bias)
-    
+
+
 class GradientPenalty(nn.Module):
+
     def forward(self, x: torch.Tensor, d: torch.Tensor):
         # Get batch size
         batch_size = x.shape[0]
-
 
         gradients, *_ = torch.autograd.grad(outputs=d,
                                             inputs=x,
                                             grad_outputs=d.new_ones(d.shape),
                                             create_graph=True)
 
-
         gradients = gradients.reshape(batch_size, -1)
 
         norm = gradients.norm(2, dim=-1)
 
-        return torch.mean(norm ** 2)
-    
+        return torch.mean(norm**2)
+
+
 class PathLengthPenalty(nn.Module):
+
     def __init__(self, beta: float):
         super().__init__()
-
 
         self.beta = beta
 
@@ -81,27 +84,26 @@ class PathLengthPenalty(nn.Module):
 
         y = torch.randn(x.shape, device=device)
 
-        output = (x * y).sum() / torch.sqrt(torch.tensor(image_size, device=device, dtype=x.dtype))
-
+        output = (x * y).sum() / torch.sqrt(
+            torch.tensor(image_size, device=device, dtype=x.dtype))
 
         gradients, *_ = torch.autograd.grad(outputs=output,
                                             inputs=w,
-                                            grad_outputs=torch.ones(output.shape, device=device),
+                                            grad_outputs=torch.ones(
+                                                output.shape, device=device),
                                             create_graph=True)
 
-
-        norm = (gradients ** 2).sum(dim=2).mean(dim=1).sqrt()
+        norm = (gradients**2).sum(dim=2).mean(dim=1).sqrt()
 
         # Regularize after first step
         if self.steps > 0:
 
-            a = self.exp_sum_a / (1 - self.beta ** self.steps)
+            a = self.exp_sum_a / (1 - self.beta**self.steps)
 
-            loss = torch.mean((norm - a) ** 2)
+            loss = torch.mean((norm - a)**2)
         else:
 
             loss = norm.new_tensor(0)
-
 
         mean = norm.mean().detach()
 
@@ -111,7 +113,9 @@ class PathLengthPenalty(nn.Module):
 
         return loss
 
+
 class SinusoidalPositionEmbeddings(nn.Module):
+
     def __init__(self, dim):
         super().__init__()
         self.dim = dim
@@ -120,7 +124,8 @@ class SinusoidalPositionEmbeddings(nn.Module):
         device = time.device
         half_dim = self.dim // 2
         embeddings = math.log(10000) / (half_dim - 1)
-        embeddings = torch.exp(torch.arange(half_dim, device=device) * -embeddings)
+        embeddings = torch.exp(
+            torch.arange(half_dim, device=device) * -embeddings)
         embeddings = time[:, None] * embeddings[None, :]
         embeddings = torch.cat((embeddings.sin(), embeddings.cos()), dim=-1)
         return embeddings

@@ -1,7 +1,6 @@
 import torch
 import numpy as np
 from models.ddpm.schedules import linear_beta_schedule
-
 """
 def get_beta_schedule(beta_schedule, beta_start, beta_end, num_diffusion_timesteps):
     def sigmoid(x):
@@ -54,13 +53,21 @@ def get_beta_schedule(beta_schedule, beta_start, beta_end, num_diffusion_timeste
     return betas
 """
 
+
 class Diffusion(torch.nn.Module):
-    def __init__(self,
-        beta_schedule='linear', beta_start=1e-4, beta_end=2e-2,
-        t_min=10, t_max=1000, noise_std=0.05, ts_dist='priority',
+
+    def __init__(
+        self,
+        beta_schedule='linear',
+        beta_start=1e-4,
+        beta_end=2e-2,
+        t_min=10,
+        t_max=1000,
+        noise_std=0.05,
+        ts_dist='priority',
     ):
         super().__init__()
-        self.p = 0.0       # Overall multiplier for augmentation probability.
+        self.p = 0.0  # Overall multiplier for augmentation probability.
         self.noise_type = self.base_noise_type = 'gauss'
         self.beta_schedule = beta_schedule
         self.beta_start = beta_start
@@ -71,7 +78,8 @@ class Diffusion(torch.nn.Module):
         self.ts_dist = ts_dist
 
         # Image-space corruptions.
-        self.noise_std = float(noise_std)        # Standard deviation of additive RGB noise.
+        self.noise_std = float(
+            noise_std)  # Standard deviation of additive RGB noise.
         self.noise_type = "gauss"
 
         self.update_T()
@@ -85,15 +93,19 @@ class Diffusion(torch.nn.Module):
         self.num_timesteps = self.betas.shape[0]
 
         self.alphas = 1.0 - self.betas
-        self.alphas_cumprod = torch.cat([torch.tensor([1.]), self.alphas.cumprod(dim=0)])
+        self.alphas_cumprod = torch.cat(
+            [torch.tensor([1.]),
+             self.alphas.cumprod(dim=0)])
         self.alphas_bar_sqrt = torch.sqrt(self.alphas_cumprod)
         self.one_minus_alphas_bar_sqrt = torch.sqrt(1 - self.alphas_cumprod)
 
     def update_T(self):
         #t_adjust = round(self.t_add)
         t_adjust = round(self.p * self.t_add)
-        t = np.clip(int(self.t_min + t_adjust), a_min=self.t_min, a_max=self.t_max)
-        
+        t = np.clip(int(self.t_min + t_adjust),
+                    a_min=self.t_min,
+                    a_max=self.t_max)
+
         # update beta values according to new T t=990
         self.set_diffusion_process(t)
 
@@ -101,13 +113,16 @@ class Diffusion(torch.nn.Module):
         self.t_epl = np.zeros(64, dtype=np.int)
         diffusion_ind = 32
         #t_diffusion = np.zeros((diffusion_ind,)).astype(np.int)
-        t_diffusion = np.zeros((diffusion_ind,), dtype=np.int32)
+        t_diffusion = np.zeros((diffusion_ind, ), dtype=np.int32)
 
         if self.ts_dist == 'priority':
             prob_t = np.arange(t) / np.arange(t).sum()
-            t_diffusion = np.random.choice(np.arange(1, t + 1), size=diffusion_ind, p=prob_t)
+            t_diffusion = np.random.choice(np.arange(1, t + 1),
+                                           size=diffusion_ind,
+                                           p=prob_t)
         elif self.ts_dist == 'uniform':
-            t_diffusion = np.random.choice(np.arange(1, t + 1), size=diffusion_ind)
+            t_diffusion = np.random.choice(np.arange(1, t + 1),
+                                           size=diffusion_ind)
 
         self.t_epl[:diffusion_ind] = t_diffusion
 
@@ -116,17 +131,21 @@ class Diffusion(torch.nn.Module):
         if noise_type == 'gauss':
             noise = torch.randn_like(x_0, device=x_0.device) * noise_std
         elif noise_type == 'bernoulli':
-            noise = (torch.bernoulli(torch.ones_like(x_0) * 0.5) * 2 - 1.) * noise_std
+            noise = (torch.bernoulli(torch.ones_like(x_0) * 0.5) * 2 -
+                     1.) * noise_std
         else:
             raise NotImplementedError(noise_type)
-        
+
         alphas_t_sqrt = self.alphas_bar_sqrt[t].view(-1, 1, 1, 1)
-        print(f"one_minus_device = {self.one_minus_alphas_bar_sqrt.device}, t_device = {t.device}")
-        one_minus_alphas_bar_t_sqrt = self.one_minus_alphas_bar_sqrt[t].view(-1, 1, 1, 1)
+        print(
+            f"one_minus_device = {self.one_minus_alphas_bar_sqrt.device}, t_device = {t.device}"
+        )
+        one_minus_alphas_bar_t_sqrt = self.one_minus_alphas_bar_sqrt[t].view(
+            -1, 1, 1, 1)
         x_t = alphas_t_sqrt * x_0 + one_minus_alphas_bar_t_sqrt * noise
 
         return x_t
-    
+
     def forward(self, x_0):
 
         batch_size, _, _, _ = x_0.shape
@@ -135,9 +154,12 @@ class Diffusion(torch.nn.Module):
         self.alphas_bar_sqrt = self.alphas_bar_sqrt.to(device)
         self.alphas_bar_sqrt = self.one_minus_alphas_bar_sqrt.to(device)
 
-        t = torch.from_numpy(np.random.choice(self.t_epl, size=batch_size, replace=True)).to(device)
-        x_t = self.q_sample(x_0, t,
-                       noise_type=self.noise_type,
-                       noise_std=self.noise_std)
-        
+        t = torch.from_numpy(
+            np.random.choice(self.t_epl, size=batch_size,
+                             replace=True)).to(device)
+        x_t = self.q_sample(x_0,
+                            t,
+                            noise_type=self.noise_type,
+                            noise_std=self.noise_std)
+
         return x_t, t.view(-1, 1)

@@ -1,11 +1,16 @@
 import torch
 from torch import nn
-import math 
+import math
 import torch.nn.functional as F
 from .util import Smooth, EqualizedLinear
 
-class Discriminator(nn.Module): 
-    def __init__(self, log_resolution: int, n_features: int = 64, max_features: int = 512):
+
+class Discriminator(nn.Module):
+
+    def __init__(self,
+                 log_resolution: int,
+                 n_features: int = 64,
+                 max_features: int = 512):
         super().__init__()
 
         # Layer to convert RGB image to a feature map with `n_features` number of features.
@@ -17,11 +22,17 @@ class Discriminator(nn.Module):
         # Calculate the number of features for each block.
         #
         # Something like `[64, 128, 256, 512, 512, 512]`.
-        features = [min(max_features, n_features * (2 ** i)) for i in range(log_resolution - 1)]
+        features = [
+            min(max_features, n_features * (2**i))
+            for i in range(log_resolution - 1)
+        ]
         # Number of [discirminator blocks](#discriminator_block)
         n_blocks = len(features) - 1
         # Discriminator blocks
-        blocks = [DiscriminatorBlock(features[i], features[i + 1]) for i in range(n_blocks)]
+        blocks = [
+            DiscriminatorBlock(features[i], features[i + 1])
+            for i in range(n_blocks)
+        ]
         self.blocks = nn.Sequential(*blocks)
 
         # [Mini-batch Standard Deviation](#mini_batch_std_dev)
@@ -50,18 +61,25 @@ class Discriminator(nn.Module):
         # Return the classification score
         return self.final(x)
 
+
 class DiscriminatorBlock(nn.Module):
+
     def __init__(self, in_features, out_features):
         super().__init__()
         # Down-sampling and $1 \times 1$ convolution layer for the residual connection
-        self.residual = nn.Sequential(DownSample(),
-                                      EqualizedConv2d(in_features, out_features, kernel_size=1))
+        self.residual = nn.Sequential(
+            DownSample(),
+            EqualizedConv2d(in_features, out_features, kernel_size=1))
 
         # Two $3 \times 3$ convolutions
         self.block = nn.Sequential(
-            EqualizedConv2d(in_features, in_features, kernel_size=3, padding=1),
+            EqualizedConv2d(in_features, in_features, kernel_size=3,
+                            padding=1),
             nn.LeakyReLU(0.2, True),
-            EqualizedConv2d(in_features, out_features, kernel_size=3, padding=1),
+            EqualizedConv2d(in_features,
+                            out_features,
+                            kernel_size=3,
+                            padding=1),
             nn.LeakyReLU(0.2, True),
         )
 
@@ -82,8 +100,10 @@ class DiscriminatorBlock(nn.Module):
 
         # Add the residual and scale
         return (x + residual) * self.scale
-    
+
+
 class DownSample(nn.Module):
+
     def __init__(self):
         super().__init__()
         # Smoothing layer
@@ -93,9 +113,13 @@ class DownSample(nn.Module):
         # Smoothing or blurring
         x = self.smooth(x)
         # Scaled down
-        return F.interpolate(x, (x.shape[2] // 2, x.shape[3] // 2), mode='bilinear', align_corners=False)
-    
+        return F.interpolate(x, (x.shape[2] // 2, x.shape[3] // 2),
+                             mode='bilinear',
+                             align_corners=False)
+
+
 class MiniBatchStdDev(nn.Module):
+
     def __init__(self, group_size: int = 4):
         super().__init__()
         self.group_size = group_size
@@ -118,15 +142,21 @@ class MiniBatchStdDev(nn.Module):
         # Append (concatenate) the standard deviations to the feature map
         return torch.cat([x, std], dim=1)
 
+
 class EqualizedConv2d(nn.Module):
-    def __init__(self, in_features: int, out_features: int,
-                 kernel_size: int, padding: int = 0):
+
+    def __init__(self,
+                 in_features: int,
+                 out_features: int,
+                 kernel_size: int,
+                 padding: int = 0):
         super().__init__()
         # Padding size
         self.padding = padding
         # [Learning-rate equalized weights](#equalized_weights)
         #self.weight = EqualizedWeight([out_features, in_features, kernel_size, kernel_size])
-        self.weight = nn.Parameter(torch.randn(out_features, in_features, kernel_size, kernel_size))
+        self.weight = nn.Parameter(
+            torch.randn(out_features, in_features, kernel_size, kernel_size))
 
         fan_in = in_features * kernel_size * kernel_size
         self.scale = 1 / math.sqrt(fan_in)

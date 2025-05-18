@@ -5,23 +5,31 @@ import math
 from .util import Smooth, EqualizedLinear
 from typing import Tuple, Optional
 
+
 class Generator(nn.Module):
-    def __init__(self, log_res, dims_w, num_features=32, max_features = 512):
+
+    def __init__(self, log_res, dims_w, num_features=32, max_features=512):
         super().__init__()
         #log_res = math.log2(res)
         self.args = [log_res, dims_w, num_features, max_features]
-        features = [min(max_features, num_features* (2**i)) for i in range(log_res-2, -1, -1)]
-        assert len(features) == (log_res-1)
-        self.num_blocks = log_res-1
-        self.initial_constant = nn.Parameter(torch.randn((1, features[0], 4, 4)))
+        features = [
+            min(max_features, num_features * (2**i))
+            for i in range(log_res - 2, -1, -1)
+        ]
+        assert len(features) == (log_res - 1)
+        self.num_blocks = log_res - 1
+        self.initial_constant = nn.Parameter(
+            torch.randn((1, features[0], 4, 4)))
 
         self.style_block = StyleBlock(dims_w, features[0], features[0])
         self.to_rgb = ToRGB(dims_w, features[0])
 
-        blocks = [GeneratorBlock(dims_w, features[i-1], features[i]) for i in range(1, self.num_blocks)]
+        blocks = [
+            GeneratorBlock(dims_w, features[i - 1], features[i])
+            for i in range(1, self.num_blocks)
+        ]
         self.blocks = nn.ModuleList(blocks)
         self.up_sample = UpSample()
-        
 
     def forward(self, w, input_noise):
         batch_size = w.shape[1]
@@ -31,11 +39,13 @@ class Generator(nn.Module):
 
         for i in range(1, self.num_blocks):
             x = self.up_sample(x)
-            x, rgb_new = self.blocks[i-1](x, w[i], input_noise[i])
+            x, rgb_new = self.blocks[i - 1](x, w[i], input_noise[i])
             rgb = self.up_sample(rgb) + rgb_new
         return rgb
-    
+
+
 class GeneratorBlock(nn.Module):
+
     def __init__(self, d_latent: int, in_features: int, out_features: int):
         super().__init__()
 
@@ -47,7 +57,8 @@ class GeneratorBlock(nn.Module):
         # *toRGB* layer
         self.to_rgb = ToRGB(d_latent, out_features)
 
-    def forward(self, x: torch.Tensor, w: torch.Tensor, noise: Tuple[Optional[torch.Tensor], Optional[torch.Tensor]]):
+    def forward(self, x: torch.Tensor, w: torch.Tensor,
+                noise: Tuple[Optional[torch.Tensor], Optional[torch.Tensor]]):
         # First style block with first noise tensor.
         # The output is of shape `[batch_size, out_features, height, width]`
         x = self.style_block1(x, w, noise[0])
@@ -60,15 +71,20 @@ class GeneratorBlock(nn.Module):
 
         # Return feature map and rgb image
         return x, rgb
-    
+
+
 class ToRGB(nn.Module):
+
     def __init__(self, d_latent: int, features: int):
         super().__init__()
         # an [equalized learning-rate linear layer](#equalized_linear)
         self.to_style = EqualizedLinear(d_latent, features, bias=1.0)
 
         # Weight modulated convolution layer without demodulation
-        self.conv = Conv2dWeightModulate(features, 3, kernel_size=1, demodulate=False)
+        self.conv = Conv2dWeightModulate(features,
+                                         3,
+                                         kernel_size=1,
+                                         demodulate=False)
         # Bias
         self.bias = nn.Parameter(torch.zeros(3))
         # Activation function
@@ -82,17 +98,22 @@ class ToRGB(nn.Module):
         # Add bias and evaluate activation function
         return self.activation(x + self.bias[None, :, None, None])
 
+
 class UpSample(nn.Module):
+
     def __init__(self):
         super().__init__()
         # Up-sampling layer
-        self.up_sample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
+        self.up_sample = nn.Upsample(scale_factor=2,
+                                     mode='bilinear',
+                                     align_corners=False)
         # Smoothing layer
         self.smooth = Smooth()
 
     def forward(self, x: torch.Tensor):
         # Up-sample and smoothen
         return self.smooth(self.up_sample(x))
+
 
 class StyleBlock(nn.Module):
 
@@ -102,7 +123,9 @@ class StyleBlock(nn.Module):
         # an [equalized learning-rate linear layer](#equalized_linear)
         self.to_style = EqualizedLinear(d_latent, in_features, bias=1.0)
         # Weight modulated convolution layer
-        self.conv = Conv2dWeightModulate(in_features, out_features, kernel_size=3)
+        self.conv = Conv2dWeightModulate(in_features,
+                                         out_features,
+                                         kernel_size=3)
         # Noise scale
         self.scale_noise = nn.Parameter(torch.zeros(1))
         # Bias
@@ -111,7 +134,8 @@ class StyleBlock(nn.Module):
         # Activation function
         self.activation = nn.LeakyReLU(0.2, True)
 
-    def forward(self, x: torch.Tensor, w: torch.Tensor, noise: Optional[torch.Tensor]):
+    def forward(self, x: torch.Tensor, w: torch.Tensor,
+                noise: Optional[torch.Tensor]):
         # Get style vector $s$
         s = self.to_style(w)
         # Weight modulated convolution
@@ -121,10 +145,16 @@ class StyleBlock(nn.Module):
             x = x + self.scale_noise[None, :, None, None] * noise
         # Add bias and evaluate activation function
         return self.activation(x + self.bias[None, :, None, None])
-    
+
+
 class Conv2dWeightModulate(nn.Module):
-    def __init__(self, in_features: int, out_features: int, kernel_size: int,
-                 demodulate: float = True, eps: float = 1e-8):
+
+    def __init__(self,
+                 in_features: int,
+                 out_features: int,
+                 kernel_size: int,
+                 demodulate: float = True,
+                 eps: float = 1e-8):
         super().__init__()
         # Number of output features
         self.out_features = out_features
@@ -135,7 +165,8 @@ class Conv2dWeightModulate(nn.Module):
 
         # [Weights parameter with equalized learning rate](#equalized_weight)
         #self.weight = EqualizedWeight([out_features, in_features, kernel_size, kernel_size])
-        self.weight = nn.Parameter(torch.randn(out_features, in_features, kernel_size, kernel_size))
+        self.weight = nn.Parameter(
+            torch.randn(out_features, in_features, kernel_size, kernel_size))
         self.scale = 1 / math.sqrt(in_features * kernel_size * kernel_size)
         # $\epsilon$
         self.eps = eps
@@ -153,7 +184,8 @@ class Conv2dWeightModulate(nn.Module):
 
         # Demodulate
         if self.demodulate:
-            sigma_inv = torch.rsqrt((weights ** 2).sum(dim=(2, 3, 4), keepdim=True) + self.eps)
+            sigma_inv = torch.rsqrt(
+                (weights**2).sum(dim=(2, 3, 4), keepdim=True) + self.eps)
             weights = weights * sigma_inv
 
         # Reshape `x`

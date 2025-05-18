@@ -1,9 +1,9 @@
-
 #from torch_fidelity import calculate_metrics
-import torch 
+import torch
 import matplotlib.pyplot as plt
 import numpy as np
 from torchvision.utils import make_grid
+
 
 def interp_noise_list(noise1, noise2, alpha):
     """
@@ -22,6 +22,8 @@ def interp_noise_list(noise1, noise2, alpha):
         n2_m = (1 - alpha) * n2_a + alpha * n2_b
         mixed.append((n1_m, n2_m))
     return mixed
+
+
 @torch.no_grad()
 def interpolate_latent_space_ddpm(model, device, res, num_steps=7):
     batch_size = 1
@@ -34,7 +36,7 @@ def interpolate_latent_space_ddpm(model, device, res, num_steps=7):
     for lambd in torch.linspace(0, 1, num_steps, device=device):
         # w1, w2 are both shape: (num_blocks, batch_size, w_dims)
         z_lambd = (1 - lambd) * z1 + lambd * z2
-        img = model.sample(z=z_lambd)   # exactly the same call as gen_images()
+        img = model.sample(z=z_lambd)  # exactly the same call as gen_images()
         images.append(img[0].cpu())
 
     # 4) Visualize
@@ -44,21 +46,20 @@ def interpolate_latent_space_ddpm(model, device, res, num_steps=7):
     plt.imshow(grid.permute(1, 2, 0).numpy())
     plt.show()
 
+
 @torch.no_grad()
-def interpolate_w_and_generate(
-    model,
-    mapping_network,
-    synthesis_network,
-    iteration,
-    num_blocks: int,
-    w_dims: int,
-    device: torch.device,
-    num_steps: int = 7,
-    epsilon_std: float = 5,
-    max_l2_dist: float = 2.0
-):
-    batch_size=1
-    style_mixing_prob=0.9
+def interpolate_w_and_generate(model,
+                               mapping_network,
+                               synthesis_network,
+                               iteration,
+                               num_blocks: int,
+                               w_dims: int,
+                               device: torch.device,
+                               num_steps: int = 7,
+                               epsilon_std: float = 5,
+                               max_l2_dist: float = 2.0):
+    batch_size = 1
+    style_mixing_prob = 0.9
     w1 = model.get_w()
     w2 = model.get_w()
 
@@ -72,7 +73,8 @@ def interpolate_w_and_generate(
         # w1, w2 are both shape: (num_blocks, batch_size, w_dims)
         w_interp = (1 - alpha) * w1 + alpha * w2
         noise_interp = interp_noise_list(fixed_noise, fixed_noise_2, alpha)
-        img = synthesis_network(w_interp, noise_interp)   # exactly the same call as gen_images()
+        img = synthesis_network(
+            w_interp, noise_interp)  # exactly the same call as gen_images()
         images.append(img[0].cpu())
 
     # Visualize with torchvision grid and matplotlib
